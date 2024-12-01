@@ -1,0 +1,31 @@
+{
+    {
+        .. $thisRight : $thisLeft :
+        .. $restRight : $restLeft :
+        []
+            $restLeft  $thisLeft  append append
+            $restRight $thisRight append append
+    }
+    [] [] append [] append
+    fold
+} $unzip2 :
+
+$input
+    lines
+    { wsplit { int } map } map
+
+    $unzip2 #
+
+    ..
+    sort $right :
+    sort $left :
+
+    0 $right length 1 - range
+    {
+        $idx :
+        $left $idx @
+        $right $idx @
+        - abs
+    } map sum
+    println
+    
