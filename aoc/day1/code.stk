@@ -1,3 +1,4 @@
+// Unzip [[a1, b1], [a2, b2], ...] into [[a1, a2, ...], [b1, b2, ...]]
 {
     {
         .. $thisRight : $thisLeft :
@@ -11,15 +12,17 @@
 } $unzip2 :
 
 $input
+    // Read zipped data
     lines
     { wsplit { int } map } map
 
+    // Unzip and order
     $unzip2 #
-
     ..
     sort $right :
     sort $left :
 
+    // Part 1: Iterate in lockstep (by index) and calculate distance between each
     0 $right length 1 - range
     {
         $idx :
@@ -29,7 +32,7 @@ $input
     } map sum
     println
 
-
+    // Part 2: Calculate similarity scores
     $left
     {
         $num :
