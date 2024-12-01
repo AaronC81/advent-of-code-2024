@@ -2,10 +2,11 @@ use std::{collections::HashMap, error::Error, fmt::Display};
 
 use crate::{parser::Node, token::Atom};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     String(String),
     Integer(isize),
+    Boolean(bool),
     Array(Vec<Value>),
 
     Unbound(String),
@@ -31,6 +32,13 @@ impl Value {
         match self {
             Value::Array(v) => Ok(v),
             _ => Err(format!("expected array, got `{self:?}`").into())
+        }
+    }
+
+    pub fn into_boolean(self) -> Result<bool, Box<dyn Error>> {
+        match self {
+            Value::Boolean(b) => Ok(b),
+            _ => Err(format!("expected bool, got `{self:?}`").into())
         }
     }
 
@@ -60,6 +68,7 @@ impl Display for Value {
         match self {
             Value::String(s) => write!(f, "{s}"),
             Value::Integer(i) => write!(f, "{i}"),
+            Value::Boolean(b) => write!(f, "{b}"),
 
             Value::Array(vec) => {
                 write!(f, "[")?;
@@ -157,7 +166,26 @@ impl Interpreter {
             "#" => {
                 let block = self.pop()?.into_block()?;
                 self.execute_block(&block)?;
-            }
+            },
+            "true" => self.push(Value::Boolean(true)),
+            "false" => self.push(Value::Boolean(false)),
+            "=" => {
+                let b = self.pop()?;
+                let a = self.pop()?;
+
+                self.push(Value::Boolean(a == b));
+            },
+            "?" => {
+                let if_truthy = self.pop()?;
+                let if_falsey = self.pop()?;
+                let cond = self.pop()?.into_boolean()?;
+
+                if cond {
+                    self.push(if_truthy);
+                } else {
+                    self.push(if_falsey);
+                }
+            },
 
             // Basic arithmetic
             "+" => {

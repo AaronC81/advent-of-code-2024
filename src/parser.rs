@@ -2,7 +2,7 @@ use std::error::Error;
 
 use crate::token::{Atom, Token};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Node {
     Atom(Atom),
     Sequence(Vec<Node>),

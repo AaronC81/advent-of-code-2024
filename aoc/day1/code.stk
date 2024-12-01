@@ -28,4 +28,13 @@ $input
         - abs
     } map sum
     println
+
+
+    $left
+    {
+        $num :
+        $right { $num = 0 1 ? } map sum
+        $num *
+    } map sum
+    println
     
