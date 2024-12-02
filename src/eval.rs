@@ -175,6 +175,11 @@ impl Interpreter {
                 let name = name.strip_prefix('$').unwrap();
 
                 let block = self.pop()?.into_block()?;
+
+                if self.user_actions.contains_key(name) {
+                    return Err(format!("already defined an action named `{name}`").into())
+                }
+
                 self.user_actions.insert(name.to_owned(), block);
             },
             "#" => {
