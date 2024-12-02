@@ -1,0 +1,29 @@
+// [arr] all?
+// Push `true` if all items in `arr` are also `true`
+// else `false`
+{
+    dup length 
+    swap { 0 1 ? } map sum
+    =
+} $all? ::
+
+// [arr] [x] count
+// Count number of occurrences of `x` in `arr`
+{
+    $x :
+    { $x = 0 1 ? } map sum
+} $count ::
+
+// [zipped] unzip
+// Unzip [[a1, b1], [a2, b2], ...] into [[a1, a2, ...], [b1, b2, ...]]
+{
+    {
+        .. $thisRight : $thisLeft :
+        .. $restRight : $restLeft :
+        []
+            $restLeft  $thisLeft  append append
+            $restRight $thisRight append append
+    }
+    [] [] append [] append
+    fold
+} $unzip ::

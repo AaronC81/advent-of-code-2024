@@ -1,30 +1,10 @@
-// Unzip [[a1, b1], [a2, b2], ...] into [[a1, a2, ...], [b1, b2, ...]]
-{
-    {
-        .. $thisRight : $thisLeft :
-        .. $restRight : $restLeft :
-        []
-            $restLeft  $thisLeft  append append
-            $restRight $thisRight append append
-    }
-    [] [] append [] append
-    fold
-} $unzip2 :
-
-// arr x $count #
-// Count number of occurrences of `x` in `arr`
-{
-    $x :
-    { $x = 0 1 ? } map sum
-} $count :
-
 $input
     // Read zipped data
     lines
     { wsplit { int } map } map
 
     // Unzip and order
-    $unzip2 #
+    unzip
     ..
     sort $right :
     sort $left :
@@ -43,7 +23,7 @@ $input
     $left
     {
         $num :
-        $right $num $count #
+        $right $num count
         $num *
     } map sum
     println

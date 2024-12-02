@@ -107,6 +107,7 @@ impl BindingFrame {
 pub struct Interpreter {
     binding_frames: Vec<BindingFrame>,
     stack: Vec<Value>,
+    user_actions: HashMap<String, Node>,
 }
 
 impl Interpreter {
@@ -114,6 +115,7 @@ impl Interpreter {
         Interpreter {
             binding_frames: vec![BindingFrame::new()],
             stack: vec![],
+            user_actions: HashMap::new(),
         }
     }
 
@@ -162,6 +164,18 @@ impl Interpreter {
 
                 let value = self.pop()?;
                 self.binding_frames.last_mut().unwrap().bindings.insert(name, value);
+            },
+            "::" => {
+                let target = self.pop()?;
+                let Value::Unbound(name) = target else {
+                    return Err(format!("bind target `{target}` is not a binding; has it already been assigned?").into())
+                };
+
+                // Drop $ off binding name
+                let name = name.strip_prefix('$').unwrap();
+
+                let block = self.pop()?.into_block()?;
+                self.user_actions.insert(name.to_owned(), block);
             },
             "#" => {
                 let block = self.pop()?.into_block()?;
@@ -381,6 +395,12 @@ impl Interpreter {
             "print" => print!("{}", self.pop()?),
             "println" => println!("{}", self.pop()?),
 
+            // User actions
+            _ if self.user_actions.contains_key(name) => {
+                let body = self.user_actions.get(name).unwrap().clone();
+                self.execute_block(&body)?;
+            }
+            
             // Oh no!
             _ => return Err(format!("unknown action `{name}`").into()),
         }
