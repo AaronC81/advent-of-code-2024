@@ -1,0 +1,43 @@
+// arr $all? #
+// Push `true` if all items in `arr` are also `true`
+// else `false`
+{
+    dup length 
+    swap { 0 1 ? } map sum
+    =
+} $all? :
+
+// arr pred $pairmatch? #
+// Whether `a b pred #` is true for each pair of items in `arr`
+{
+    $pred :
+    $arr :
+    0 $arr length 2 - range
+    {
+        $idx :
+        $arr $idx @
+        $arr $idx 1 + @
+        $pred #
+    }
+    map
+    $all? #
+} $pairmatch? :
+
+// arr $part1Safe? #
+{
+    $safeArr :
+
+    $safeArr { < } $pairmatch? #
+    $safeArr { > } $pairmatch? #
+    |
+
+    $safeArr { - abs dup 0 > swap 4 < & } $pairmatch? #
+    &
+} $part1Safe? :
+
+$input
+    lines
+    { wsplit { int } map } map
+    { $part1Safe? # } map
+    { 0 1 ? } map sum
+    println

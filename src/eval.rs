@@ -186,6 +186,18 @@ impl Interpreter {
                     self.push(if_falsey);
                 }
             },
+            "|" => {
+                let b = self.pop()?.into_boolean()?;
+                let a = self.pop()?.into_boolean()?;
+
+                self.push(Value::Boolean(a || b));
+            },
+            "&" => {
+                let b = self.pop()?.into_boolean()?;
+                let a = self.pop()?.into_boolean()?;
+
+                self.push(Value::Boolean(a && b));
+            },
 
             // Basic arithmetic
             "+" => {
@@ -207,6 +219,18 @@ impl Interpreter {
                 let b = self.pop()?.into_integer()?;
                 let a = self.pop()?.into_integer()?;
                 self.push(Value::Integer(a / b))
+            },
+
+            // Numeric comparison
+            ">" => {
+                let b = self.pop()?.into_integer()?;
+                let a = self.pop()?.into_integer()?;
+                self.push(Value::Boolean(a > b))
+            },
+            "<" => {
+                let b = self.pop()?.into_integer()?;
+                let a = self.pop()?.into_integer()?;
+                self.push(Value::Boolean(a < b))
             },
 
             // Unary arithmetic

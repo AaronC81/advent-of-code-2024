@@ -20,9 +20,9 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Box<dyn Error>> {
         .map(|part|
             if let Ok(num) = part.parse() {
                 Ok(Token::Atom(Atom::LiteralInteger(num)))
-            } else if part.chars().all(|c| is_valid_action_char(c)) {
+            } else if part.chars().all(|c| is_valid_identifier_char(c)) {
                 Ok(Token::Atom(Atom::Action(part.to_owned())))
-            } else if part.starts_with('$') && part.chars().skip(1).all(|c| is_valid_binding_char(c)) {
+            } else if part.starts_with('$') && part.chars().skip(1).all(|c| is_valid_identifier_char(c)) {
                 Ok(Token::Atom(Atom::Binding(part.to_owned())))
             } else if part == "{" {
                 Ok(Token::LBrace)
@@ -35,10 +35,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Box<dyn Error>> {
         .collect()
 }
 
-fn is_valid_action_char(c: char) -> bool {
-    c.is_alphanumeric() || ['_', '+', '-', '*', '/', '=', '^', ':', '.', '?', '[', ']', '#', '@'].contains(&c)
-}
-
-fn is_valid_binding_char(c: char) -> bool {
-    c.is_alphanumeric() || c == '_'
+fn is_valid_identifier_char(c: char) -> bool {
+    c.is_alphanumeric() || ['_', '+', '-', '*', '/', '=', '^', ':', '.', '?', '[', ']', '#', '@', '<', '>', '&', '|'].contains(&c)
 }
