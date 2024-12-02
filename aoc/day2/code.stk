@@ -14,7 +14,8 @@
     all?
 } $pairmatch? ::
 
-// [arr] $part1Safe?
+// [arr] $safe?
+// Whether the report, as exactly given, is "safe".
 {
     $safeArr :
 
@@ -24,11 +25,46 @@
 
     $safeArr { - abs dup 0 > swap 4 < & } pairmatch?
     &
-} $part1Safe? ::
+} $safe? ::
 
+// [arr] [index] removeIndex
+{
+    $soughtIndex :
+    enumerate
+    { .. drop $soughtIndex = ! } filter
+    { .. swap drop } map
+} $removeIndex ::
+
+// [arr] oneItemRemovedPermutations
+{
+    dup length 1 - 0 swap range
+    { swap dup pull2 removeIndex } map
+} $oneItemRemovedPermutations ::
+
+// [arr] $safeWithDampener?
+// Whether the report, with up to one item removed, is "safe".
+{
+    // [original, index 0 removed, index 1 removed, index 2 removed, ...]
+    dup oneItemRemovedPermutations swap append
+    { safe? } map
+    any?
+} $safeWithDampener? ::
+
+
+// Load list of reports
 $input
-    lines
-    { wsplit { int } map } map
-    { part1Safe? } map
-    { 0 1 ? } map sum
-    println
+lines
+{ wsplit { int } map } map
+$reports :
+
+// Part 1
+$reports
+{ safe? } map
+{ 0 1 ? } map sum
+println
+
+// Part 2
+$reports
+{ safeWithDampener? } map
+{ 0 1 ? } map sum
+println

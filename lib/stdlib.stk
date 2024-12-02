@@ -1,3 +1,27 @@
+// [a] [b] [c] pull2 --> [b] [c] [a]
+{
+    $__c :
+    $__b :
+    $__a :
+    $__b $__c $__a
+} $pull2 ::
+
+// [a] [b] [c] [d] pull3 --> [b] [c] [d] [a]
+{
+    $__d :
+    $__c :
+    $__b :
+    $__a :
+    $__b $__c $__d $__a
+} $pull3 ::
+
+// [a] [b] pair --> [ a, b ]
+{
+    []
+    pull2 append
+    swap append
+} $pair ::
+
 // [arr] all?
 // Push `true` if all items in `arr` are also `true`
 // else `false`
@@ -6,6 +30,13 @@
     swap { 0 1 ? } map sum
     =
 } $all? ::
+
+// [arr] any?
+// Push `true` if any items in `arr` are also `true`
+// else `false`
+{
+    { | } false fold
+} $any? ::
 
 // [arr] [x] count
 // Count number of occurrences of `x` in `arr`
@@ -27,3 +58,102 @@
     [] [] append [] append
     fold
 } $unzip ::
+
+// [a] [b] zip
+// Zip [a1, a2, ...] and [b1, b2, ...] into [[a1, b1], [a2, b2], ...]
+// Truncates the longer list to the same length as the shorter one
+{
+    $a :
+    $b :
+
+    // Find target length
+    $a length $b length pair min $len :
+
+    // Pick out of lists to build
+    0 $len 1 - range
+    {
+        $idx :
+        $a $idx @
+        $b $idx @
+        pair
+    } map
+} $zip ::
+
+// [arr] empty?
+// `true` if the list is empty, else `false`
+{ [] = } $empty? ::
+
+// [arr] [pred] filter
+// Create a new array by filtering `arr` to only contain items which match `pred`
+//
+// The implementation for this is horrible, because due to bindings being stack-scoped, recursive
+// functions can't use bindings!
+{
+    swap dup empty?
+    // [pred] [arr] [is-empty]
+
+    {
+        // Standard case: items in the array
+        // Filter the current one and recurse to the rest of the list
+        
+        swap dup pull2 shift dup
+        // [pred] [pred] [rest] [this] [this]
+
+        pull3 #
+        // [pred] [rest] [this] [this-matches-pred?]
+
+        { drop [] }
+        { [] swap append }
+        ? #
+        // [pred] [rest] [this-or-empty-array]
+
+        pull2 pull2 swap
+        // [this-or-empty-array] [rest] [pred]
+
+        filter
+        // [this-or-empty-array] [rest-array]
+
+        ++
+    }
+    {
+        // Base case: empty array
+        drop drop []
+    }
+    ? #
+} $filter ::
+
+// [arr] min
+// Get the minimum item in the array
+{
+    shift
+    $start :
+
+    // [rest]
+    {
+        // [acc] [item]
+        dup pull2 dup pull2 swap
+        // [item] [acc] [item] [acc]
+
+        <
+        {
+            // New item IS NOT lower than the accumulator, so continue using the accumulator
+            swap drop
+        }
+        {
+            // New item IS lower than the accumulator, so drop accumulator and use new item
+            drop
+        }
+        ? #
+    }
+    $start
+    fold
+} $min ::
+
+// [ a, b, c, ... ] enumerate --> [ [a, 0], [b, 1], [c, 2], ... ]
+{
+    $arr :
+
+    $arr
+    0 $arr length 1 - range
+    zip
+} $enumerate ::

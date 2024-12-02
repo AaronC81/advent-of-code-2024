@@ -36,5 +36,5 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Box<dyn Error>> {
 }
 
 fn is_valid_identifier_char(c: char) -> bool {
-    c.is_alphanumeric() || ['_', '+', '-', '*', '/', '=', '^', ':', '.', '?', '[', ']', '#', '@', '<', '>', '&', '|'].contains(&c)
+    c.is_alphanumeric() || ['_', '+', '-', '*', '/', '=', '^', ':', '.', '?', '[', ']', '#', '@', '<', '>', '&', '|', '!'].contains(&c)
 }

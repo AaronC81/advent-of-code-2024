@@ -212,6 +212,10 @@ impl Interpreter {
 
                 self.push(Value::Boolean(a && b));
             },
+            "!" => {
+                let x = self.pop()?.into_boolean()?;
+                self.push(Value::Boolean(!x));
+            }
 
             // Basic arithmetic
             "+" => {
@@ -362,6 +366,13 @@ impl Interpreter {
             "sum" => {
                 let sum = self.pop()?.into_integer_array()?.iter().sum();
                 self.push(Value::Integer(sum));
+            },
+            "shift" => {
+                let mut arr = self.pop()?.into_array()?;
+                let first = arr.remove(0);
+
+                self.push(Value::Array(arr));
+                self.push(first);
             }
 
             // String operations
@@ -394,6 +405,13 @@ impl Interpreter {
             // I/O
             "print" => print!("{}", self.pop()?),
             "println" => println!("{}", self.pop()?),
+            "debug" => {
+                println!("\n=== TOP ===");
+                for item in self.stack.iter().rev() {
+                    println!("{item}");
+                }
+                println!("===========");
+            }
 
             // User actions
             _ if self.user_actions.contains_key(name) => {
