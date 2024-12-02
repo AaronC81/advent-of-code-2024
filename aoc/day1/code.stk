@@ -23,7 +23,7 @@ $input
     $left
     {
         $num :
-        $right $num count
+        $right { $num = } count
         $num *
     } map sum
     println

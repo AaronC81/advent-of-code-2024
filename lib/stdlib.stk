@@ -38,11 +38,10 @@
     { | } false fold
 } $any? ::
 
-// [arr] [x] count
-// Count number of occurrences of `x` in `arr`
+// [arr] [pred] count
+// Count number of items matching `pred` in `arr`
 {
-    $x :
-    { $x = 0 1 ? } map sum
+    map { 0 1 ? } map sum
 } $count ::
 
 // [zipped] unzip
@@ -157,3 +156,11 @@
     0 $arr length 1 - range
     zip
 } $enumerate ::
+
+// [arr] [index] remove
+{
+    $soughtIndex :
+    enumerate
+    { .. drop $soughtIndex = ! } filter
+    { .. swap drop } map
+} $remove ::

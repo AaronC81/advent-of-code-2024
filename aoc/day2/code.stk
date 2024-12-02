@@ -27,18 +27,10 @@
     &
 } $safe? ::
 
-// [arr] [index] removeIndex
-{
-    $soughtIndex :
-    enumerate
-    { .. drop $soughtIndex = ! } filter
-    { .. swap drop } map
-} $removeIndex ::
-
 // [arr] oneItemRemovedPermutations
 {
     dup length 1 - 0 swap range
-    { swap dup pull2 removeIndex } map
+    { swap dup pull2 remove } map
 } $oneItemRemovedPermutations ::
 
 // [arr] $safeWithDampener?
@@ -59,12 +51,10 @@ $reports :
 
 // Part 1
 $reports
-{ safe? } map
-{ 0 1 ? } map sum
+{ safe? } count
 println
 
 // Part 2
 $reports
-{ safeWithDampener? } map
-{ 0 1 ? } map sum
+{ safeWithDampener? } count
 println
