@@ -266,20 +266,6 @@ impl Interpreter {
                 self.push(Value::Integer(i.abs()))
             },
 
-            // Basic stack
-            "dup" => {
-                let x = self.pop()?;
-                self.push(x.clone());
-                self.push(x);
-            },
-            "swap" => {
-                let x = self.pop()?;
-                let y = self.pop()?;
-                self.push(x);
-                self.push(y);
-            },
-            "drop" => { self.pop()?; },
-
             // Stack unpack
             "." | ".." | "..." | "...." | "....." | "......" => {
                 let a = self.pop()?.into_array()?;
@@ -367,10 +353,6 @@ impl Interpreter {
                 self.push(Value::Array(
                     arr.into_iter().map(|i| Value::Integer(i)).collect()
                 ))
-            },
-            "sum" => {
-                let sum = self.pop()?.into_integer_array()?.iter().sum();
-                self.push(Value::Integer(sum));
             },
             "shift" => {
                 let mut arr = self.pop()?.into_array()?;

@@ -1,3 +1,18 @@
+// [a] dup --> [a] [a]
+{
+    $__a : $__a $__a
+} $dup ::
+
+// [a] drop -->
+{
+    $__ :
+} $drop ::
+
+// [a] [b] swap --> [b] [a]
+{
+    $__b : $__a : $__b $__a
+} $swap ::
+
 // [a] [b] [c] pull2 --> [b] [c] [a]
 {
     $__c :
@@ -164,3 +179,8 @@
     { .. drop $soughtIndex = ! } filter
     { .. swap drop } map
 } $remove ::
+
+// [arr] sum
+{
+    { + } 0 fold
+} $sum ::
