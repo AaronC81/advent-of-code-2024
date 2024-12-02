@@ -11,6 +11,13 @@
     fold
 } $unzip2 :
 
+// arr x $count #
+// Count number of occurrences of `x` in `arr`
+{
+    $x :
+    { $x = 0 1 ? } map sum
+} $count :
+
 $input
     // Read zipped data
     lines
@@ -36,7 +43,7 @@ $input
     $left
     {
         $num :
-        $right { $num = 0 1 ? } map sum
+        $right $num $count #
         $num *
     } map sum
     println
