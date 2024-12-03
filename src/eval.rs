@@ -406,6 +406,12 @@ impl Interpreter {
                     Err(_) => return Err(format!("not convertible to integer: `{s}`").into()),
                 }
             },
+            
+            // Character operations
+            "digit?" => {
+                let c = self.pop()?.into_char()?;
+                self.push(Value::Boolean(c.is_digit(10)));
+            }
 
             // I/O
             "print" => print!("{}", self.pop()?),
