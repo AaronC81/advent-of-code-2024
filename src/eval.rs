@@ -4,7 +4,7 @@ use crate::{parser::Node, token::Atom};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
-    String(String),
+    Char(char),
     Integer(isize),
     Boolean(bool),
     Array(Vec<Value>),
@@ -14,11 +14,27 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn into_string(self) -> Result<String, Box<dyn Error>> {
+    pub fn into_char(self) -> Result<char, Box<dyn Error>> {
         match self {
-            Value::String(s) => Ok(s),
-            _ => Err(format!("expected string, got `{self:?}`").into())
+            Value::Char(c) => Ok(c),
+            _ => Err(format!("expected character, got `{self:?}`").into())
         }
+    }
+
+    pub fn into_string(self) -> Result<String, Box<dyn Error>> {
+        self.into_array()?
+            .into_iter()
+            .map(|item|
+                match item {
+                    Value::Char(c) => Ok(c),
+                    _ => Err("all items in array must be characters".into()),
+                }
+            )
+            .collect()
+    }
+
+    pub fn from_string(s: &str) -> Value {
+        Value::Array(s.chars().map(Value::Char).collect())
     }
 
     pub fn into_integer(self) -> Result<isize, Box<dyn Error>> {
@@ -66,7 +82,7 @@ impl Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::String(s) => write!(f, "{s}"),
+            Value::Char(c) => write!(f, "'{c}"),
             Value::Integer(i) => write!(f, "{i}"),
             Value::Boolean(b) => write!(f, "{b}"),
 
@@ -363,12 +379,13 @@ impl Interpreter {
             }
 
             // String operations
+            // TODO: can be implemented as more general array operations now
             "lines" => {
                 let s = self.pop()?.into_string()?;
                 
                 self.push(Value::Array(
                     s.split("\n")
-                        .map(|line| Value::String(line.to_owned()))
+                        .map(Value::from_string)
                         .collect()
                 ));
             },
@@ -377,7 +394,7 @@ impl Interpreter {
                 
                 self.push(Value::Array(
                     s.split_ascii_whitespace()
-                        .map(|line| Value::String(line.to_owned()))
+                        .map(Value::from_string)
                         .collect()
                 ));
             },

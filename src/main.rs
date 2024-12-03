@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut interpreter = Interpreter::new();
     if let Some(input) = input {
-        interpreter.set_top_level_binding("$input", Value::String(input));
+        interpreter.set_top_level_binding("$input", Value::from_string(&input));
     }
     interpreter.execute(&stdlib)?; // Load stdlib
     interpreter.execute(&root)?;
