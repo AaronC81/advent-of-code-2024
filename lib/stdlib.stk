@@ -207,3 +207,9 @@
     { drop drop [] }
     ? #
 } $repeat ::
+
+// Ridiculous but very funny array sugar
+// Means you can write array literals like [ 1 , 2 , 3 ]
+{ [] } $[ ::
+{ append } $, ::
+{ append } $] ::
