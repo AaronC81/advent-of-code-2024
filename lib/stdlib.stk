@@ -30,6 +30,11 @@
     $__b $__c $__d $__a
 } $pull3 ::
 
+// [a] singleton --> [ a ]
+{
+    [] swap append
+} $singleton ::
+
 // [a] [b] pair --> [ a, b ]
 {
     []
@@ -69,7 +74,7 @@
             $restLeft  $thisLeft  append append
             $restRight $thisRight append append
     }
-    [] [] append [] append
+    [] [] pair
     fold
 } $unzip ::
 
@@ -117,7 +122,7 @@
         // [pred] [rest] [this] [this-matches-pred?]
 
         { drop [] }
-        { [] swap append }
+        { singleton }
         ? #
         // [pred] [rest] [this-or-empty-array]
 
@@ -184,3 +189,21 @@
 {
     { + } 0 fold
 } $sum ::
+
+// [item] [count] repeat
+{
+    dup 0 =
+    {
+        // Funky hack to work around binding precedence issue
+        // Do all binding work in a discarded non-recursive frame
+        {
+            $count :
+            $item :
+            $item singleton $item $count 1 -
+        } #
+        repeat
+        ++
+    }
+    { drop drop [] }
+    ? #
+} $repeat ::
