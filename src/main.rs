@@ -1,4 +1,4 @@
-use std::{env::args, error::Error, fs::read_to_string, path::Path, process::abort};
+use std::{env::args, error::Error, fs::read_to_string, io::{stdin, stdout, Write}, path::Path, process::abort};
 
 use eval::{Interpreter, Value};
 use parser::{parse, Node};
@@ -19,11 +19,13 @@ pub fn code_to_node(code: &str) -> Result<Node, Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // If no (additional) args passed, start a repl
+    if args().len() == 1 {
+        return repl();
+    }
+
     let code_path = args().nth(1).expect("no code path passed");
     let input_path = args().nth(2);
-
-    // Load standard library
-    let stdlib = code_to_node(include_str!("../lib/stdlib.stk"))?;
 
     // Load input code
     let code = read_to_string(code_path)?;
@@ -35,9 +37,45 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(input) = input {
         interpreter.set_top_level_binding("$input", Value::from_string(&input));
     }
-    interpreter.execute(&stdlib)?; // Load stdlib
+    interpreter.execute(&load_stdlib()?)?; // Load stdlib
     interpreter.execute(&root)?;
 
     Ok(())
 }
 
+fn repl() -> Result<(), Box<dyn Error>> {
+    let mut interpreter = Interpreter::new();
+    interpreter.execute(&load_stdlib()?)?;
+
+    loop {
+        print!("> ");
+        stdout().flush()?;
+
+        let mut line = String::new();
+        stdin().read_line(&mut line)?;
+
+        let node;
+        match code_to_node(&line) {
+            Ok(n) => node = n,
+            Err(e) => {
+                println!("Parse error: {e}");
+                continue;
+            }
+        }
+
+        match interpreter.execute(&node) {
+            Ok(_) => {
+                interpreter.print_stack_debug();
+                println!("");
+            },
+            Err(e) => {
+                println!("Execution error: {e:?}");
+                continue;
+            }
+        }
+    }
+}
+
+fn load_stdlib() -> Result<Node, Box<dyn Error>> {
+    code_to_node(include_str!("../lib/stdlib.stk"))
+}

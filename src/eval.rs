@@ -81,6 +81,11 @@ impl Value {
 // Representation when printed
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Special case: print strings as strings
+        if let Ok(s) = self.clone().into_string() {
+            return write!(f, "{s}");
+        }
+
         match self {
             Value::Char(c) => write!(f, "{c}"),
             Value::Integer(i) => write!(f, "{i}"),
@@ -416,13 +421,7 @@ impl Interpreter {
             // I/O
             "print" => print!("{}", self.pop()?),
             "println" => println!("{}", self.pop()?),
-            "debug" => {
-                println!("\n=== TOP ===");
-                for item in self.stack.iter().rev() {
-                    println!("{item}");
-                }
-                println!("===========");
-            }
+            "debug" => self.print_stack_debug(),
 
             // User actions
             _ if self.user_actions.contains_key(name) => {
@@ -435,6 +434,14 @@ impl Interpreter {
         }
 
         Ok(())
+    }
+
+    pub fn print_stack_debug(&self) {
+        println!("\n=== TOP ===");
+        for item in self.stack.iter().rev() {
+            println!("{item}");
+        }
+        println!("===========");
     }
 
     fn push_binding(&mut self, name: &str) {
