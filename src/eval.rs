@@ -82,7 +82,7 @@ impl Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Char(c) => write!(f, "'{c}"),
+            Value::Char(c) => write!(f, "{c}"),
             Value::Integer(i) => write!(f, "{i}"),
             Value::Boolean(b) => write!(f, "{b}"),
 
@@ -143,6 +143,7 @@ impl Interpreter {
         match node {
             Node::Atom(atom) => match atom {
                 Atom::LiteralInteger(i) => self.push(Value::Integer(*i)),
+                Atom::LiteralChar(c) => self.push(Value::Char(*c)),
                 Atom::Action(a) => self.execute_action(a)?,
                 Atom::Binding(b) => self.push_binding(b),
             }

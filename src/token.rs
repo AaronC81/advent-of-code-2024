@@ -3,6 +3,7 @@ use std::error::Error;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Atom {
     LiteralInteger(isize),
+    LiteralChar(char),
     Action(String),
     Binding(String),
 }
@@ -24,6 +25,14 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Box<dyn Error>> {
                 Ok(Token::Atom(Atom::Action(part.to_owned())))
             } else if part.starts_with('$') && part.chars().skip(1).all(|c| is_valid_identifier_char(c)) {
                 Ok(Token::Atom(Atom::Binding(part.to_owned())))
+            } else if part.starts_with('\'') && part.ends_with('\'') {
+                let chars = part.chars().collect::<Vec<_>>();
+                if chars.len() != 3 { // ' x '
+                    return Err(format!("invalid character literal: {part}").into());
+                }
+
+                let c = chars[1];
+                Ok(Token::Atom(Atom::LiteralChar(c)))
             } else if part == "{" {
                 Ok(Token::LBrace)
             } else if part == "}" {
