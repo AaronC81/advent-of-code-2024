@@ -242,6 +242,21 @@ impl Interpreter {
             "!" => {
                 let x = self.pop()?.into_boolean()?;
                 self.push(Value::Boolean(!x));
+            },
+            "while" => {
+                let cond = self.pop()?.into_block()?;
+                let action = self.pop()?.into_block()?;
+
+                loop {
+                    self.execute_block(&cond)?;
+                    let b = self.pop()?.into_boolean()?;
+
+                    if b {
+                        self.execute_block(&action)?;
+                    } else {
+                        break
+                    }
+                }
             }
 
             // Basic arithmetic
@@ -382,6 +397,45 @@ impl Interpreter {
 
                 self.push(Value::Array(arr));
                 self.push(first);
+            },
+            "break" => {
+                let pred = self.pop()?.into_block()?;
+                let arr = self.pop()?.into_array()?;
+
+                // Create a new array whenever an item matches the predicate
+                // but KEEP the item which satisfied the predicate
+                // (That's why we're called `break` and not `split`, though I don't think it's a
+                //  great name...)
+                let mut result = vec![vec![]];
+                for item in arr {
+                    // Invoke predicate
+                    self.push(item.clone());
+                    self.execute_block(&pred)?;
+                    let is_delimiter = self.pop()?.into_boolean()?;
+
+                    if is_delimiter {
+                        // Delimiter: add new array containing just this
+                        // (Wrapped in an array so you can `map` over the broken array and treat
+                        //  all items in the same way)
+                        result.push(vec![item]);
+
+                        // ...then start new list for non-delimiters
+                        result.push(vec![]);
+                    } else {
+                        // Non-delimiter: just keep adding onto the last bit
+                        result.last_mut().unwrap().push(item);
+                    }
+                }
+
+                // Push result
+                self.push(
+                    Value::Array(result.into_iter().map(Value::Array).collect())
+                );
+            },
+            "reverse" => {
+                let mut arr = self.pop()?.into_array()?;
+                arr.reverse();
+                self.push(Value::Array(arr));
             }
 
             // String operations

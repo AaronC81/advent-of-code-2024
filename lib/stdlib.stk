@@ -1,3 +1,17 @@
+{ 
+    $__b : $__a :
+    $__a $__b <
+    $__a $__b =
+    |
+} $<= :: 
+
+{ 
+    $__b : $__a :
+    $__a $__b >
+    $__a $__b =
+    |
+} $>= :: 
+
 // [a] dup --> [a] [a]
 {
     $__a : $__a $__a
@@ -207,6 +221,23 @@
     { drop drop [] }
     ? #
 } $repeat ::
+
+// [nested-arr] flatten
+{
+    { ++ } [] fold
+} $flatten ::
+
+// [arr] [blk] each
+// Like `map`, but the block isn't expected to return anything
+{
+    // Creates an array of zeroes which is then dropped
+    {
+        $__item :
+        $__realBlock :
+        $__item $__realBlock #
+        $__realBlock 0
+    } pull2 swap map drop
+} $each ::
 
 // Ridiculous but very funny array sugar
 // Means you can write array literals like [ 1 , 2 , 3 ]
