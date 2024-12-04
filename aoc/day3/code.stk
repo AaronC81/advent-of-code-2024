@@ -27,6 +27,30 @@ $tokens :
 } $validMul? ::
 
 {
+    // Awful endswith implementation 2: copy-paste boogaloo
+    dup length 2 >=
+    swap
+        reverse
+        [ 'd' , 'o' ] reverse
+        zip
+        { .. = } map all?
+    &
+} $validDo? ::
+
+{
+    // Awful endswith implementation 3: good lord
+    dup length 5 >=
+    swap
+        reverse
+        // Syntax quirk means that character for ' is literally '''
+        // This looks awful
+        [ 'd' , 'o' , 'n' , ''' , 't' ] reverse
+        zip
+        { .. = } map all?
+    &
+} $validDont? ::
+
+{
     dup length
         dup  3 <=
         swap 1 >= &
@@ -34,33 +58,69 @@ $tokens :
     &
 } $validNumber? ::
 
-// Look for that token sequence!
-6 $windowSize :
-0 $tokens length $windowSize - range
+// Interpret sequence of operations.
+//
+// TOGGLING interpret --> RESULT
+//   TOGGLING: controls whether to look for `do` and `don't`
 {
-    $index :
+    // For part 1/2 control
+    $useToggling :
 
-    // Status
-    $index print
-    '/' print
-    $tokens length println
-
-    $tokens $index     @ validMul?      
-    $tokens $index 1 + @ [ '(' ] =           &
-    $tokens $index 2 + @ validNumber?    &
-    $tokens $index 3 + @ [ ',' ] =           &
-    $tokens $index 4 + @ validNumber?    &
-    $tokens $index 5 + @ [ ')' ] =           &
-
+    // Look for that token sequence! 
+    // Fold using an accumulator of [ count so far, enabled ]
+    6 $windowSize :
+    0 $tokens length $windowSize - range
     {
-        // No match. Contribute zero to the overall count
-        0
-    }
-    {
-        // A match, wahey! Do a mul
-        $tokens $index 2 + @ int
-        $tokens $index 4 + @ int
-        *
-    }
-    ? #
-} map sum println
+        $index :
+        ..
+        $enabled :
+        $countPast :
+
+        // mul(x,y)
+        $tokens $index     @ validMul?      
+        $tokens $index 1 + @ [ '(' ] =           &
+        $tokens $index 2 + @ validNumber?    &
+        $tokens $index 3 + @ [ ',' ] =           &
+        $tokens $index 4 + @ validNumber?    &
+        $tokens $index 5 + @ [ ')' ] =           &
+        $enabled                                &
+        {
+            // No match. Contribute zero to the overall count
+            0
+        }
+        {
+            // A match, wahey! Do a mul
+            $tokens $index 2 + @ int
+            $tokens $index 4 + @ int
+            *
+        }
+        ? #
+        $countThis :
+
+        // Check for toggling controls
+        $useToggling
+        { $enabled }
+        {
+            // do()
+            $tokens $index     @ validDo?      
+            $tokens $index 1 + @ [ '(' ] = &
+            $tokens $index 3 + @ [ ')' ] = &
+            {
+                // don't()
+                $tokens $index     @ validDont?
+                $tokens $index 1 + @ [ '(' ] = &
+                $tokens $index 3 + @ [ ')' ] = &
+                $enabled false ?
+            }
+            { true }
+            ? #
+        }
+        ? #
+        $newEnabled :
+
+        [ $countPast $countThis + , $newEnabled ]
+    } [ 0 , true ] fold .. drop
+} $interpret ::
+
+false interpret println
+true interpret println
