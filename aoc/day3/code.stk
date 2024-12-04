@@ -8,47 +8,26 @@ $input
 break
 $tokens :
 
-// After this, there's one valid token sequence we accept:
-//   [..., "....mul", '(', "123", ',', "456", ')', ...]
-//         ^^^^^^^^^       ^^^^^       ^^^^^
-//        anything, but     digit sequences
-//        must end with      of 1-3 digits
-//            `mul`       
-
+// Check whether an array ends with a different array.
+//
+// HAYSTACK NEEDLE end? --> BOOL
+//   HAYSTACK: Array to search in
+//   NEEDLE: Expected ending
+//   BOOL: Whether it ended with that
 {
-    // Awful endswith implementation
-    dup length 3 >=
-    swap
-        reverse
-        [ 'm' , 'u' , 'l' ] reverse
-        zip
-        { .. = } map all?
-    &
-} $validMul? ::
+    $needle : $haystack :
 
-{
-    // Awful endswith implementation 2: copy-paste boogaloo
-    dup length 2 >=
-    swap
-        reverse
-        [ 'd' , 'o' ] reverse
-        zip
-        { .. = } map all?
-    &
-} $validDo? ::
+    $haystack length $needle length >=
 
-{
-    // Awful endswith implementation 3: good lord
-    dup length 5 >=
-    swap
-        reverse
-        // Syntax quirk means that character for ' is literally '''
-        // This looks awful
-        [ 'd' , 'o' , 'n' , ''' , 't' ] reverse
-        zip
-        { .. = } map all?
+    $haystack reverse $needle reverse 
+    zip { .. = } map all?
+    
     &
-} $validDont? ::
+} $end? ::
+
+{ [ 'm' , 'u' , 'l' ] end? } $validMul? ::
+{ [ 'd' , 'o' ] end? } $validDo? ::
+{ [ 'd' , 'o' , 'n' , ''' , 't' ] end? } $validDont? ::
 
 {
     dup length
