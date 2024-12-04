@@ -1,0 +1,66 @@
+// Broad strokes - break on key characters
+$input
+{ $c :
+    $c ')' =
+    $c '(' = |
+    $c ',' = |
+}
+break
+$tokens :
+
+// After this, there's one valid token sequence we accept:
+//   [..., "....mul", '(', "123", ',', "456", ')', ...]
+//         ^^^^^^^^^       ^^^^^       ^^^^^
+//        anything, but     digit sequences
+//        must end with      of 1-3 digits
+//            `mul`       
+
+{
+    // Awful endswith implementation
+    dup length 3 >=
+    swap
+        reverse
+        [ 'm' , 'u' , 'l' ] reverse
+        zip
+        { .. = } map all?
+    &
+} $validMul? ::
+
+{
+    dup length
+        dup  3 <=
+        swap 1 >= &
+        swap { digit? } map all? 
+    &
+} $validNumber? ::
+
+// Look for that token sequence!
+6 $windowSize :
+0 $tokens length $windowSize - range
+{
+    $index :
+
+    // Status
+    $index print
+    '/' print
+    $tokens length println
+
+    $tokens $index     @ validMul?      
+    $tokens $index 1 + @ [ '(' ] =           &
+    $tokens $index 2 + @ validNumber?    &
+    $tokens $index 3 + @ [ ',' ] =           &
+    $tokens $index 4 + @ validNumber?    &
+    $tokens $index 5 + @ [ ')' ] =           &
+
+    {
+        // No match. Contribute zero to the overall count
+        0
+    }
+    {
+        // A match, wahey! Do a mul
+        $tokens $index 2 + @ int
+        $tokens $index 4 + @ int
+        *
+    }
+    ? #
+} map sum println
