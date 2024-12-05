@@ -82,7 +82,7 @@ impl Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Special case: print strings as strings
-        if let Ok(s) = self.clone().into_string() {
+        if let Ok(s) = self.clone().into_string() && s.len() > 0 {
             return write!(f, "{s}");
         }
 

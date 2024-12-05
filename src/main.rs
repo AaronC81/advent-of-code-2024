@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use std::{env::args, error::Error, fs::read_to_string, io::{stdin, stdout, Write}, path::Path, process::abort};
 
 use eval::{Interpreter, Value};
