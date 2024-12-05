@@ -1,0 +1,138 @@
+// First step: find X with an M adjacent to it, get direction
+// Second step: traverse in that direction expecting "A" and "S"
+
+//      x
+//    ---->
+//   | XMAS
+// y | XMAS
+//   | XMAS
+//   v XMAS
+// 
+// $grid y @ x @
+
+// For the helper methods defined below, we accept points as `X Y` (with `Y` at the top of the stack)
+// because it makes sense for points *as arrays* to be `[ X, Y ]`, and that's how it would unpack
+// with `..`
+
+$input lines $grid :
+
+$grid length $rows :
+$grid 0 @ length $columns :
+
+// X Y getPoint --> C
+{ $__y : $__x : $grid $__y @ $__x @ } $getPoint ::
+
+// X Y inBounds? --> B
+{
+    // Y
+    dup
+        0 >=
+        swap $rows <
+        &
+
+    // X
+    swap dup
+        0 >=
+        swap $columns <
+        &
+
+    &
+} $inBounds? ::
+
+// X Y adjacents --> [ [ X , Y ] , ... ]
+// Get all in-bound points adjacent to the given point.
+{
+    $y : $x :
+
+    [   [ $x 1 + , $y 1 - ] ,
+        [ $x 1 + , $y     ] ,
+        [ $x 1 + , $y 1 + ] ,
+        [ $x     , $y 1 - ] ,
+        [ $x     , $y 1 + ] ,
+        [ $x 1 - , $y 1 - ] ,
+        [ $x 1 - , $y     ] ,
+        [ $x 1 - , $y 1 + ] ]
+    { .. inBounds? } filter
+} $adjacents ::
+
+// CHAR occurrences --> [ [ X , Y ] , ... ]
+// Find points where a given character appears in the word search.
+{
+    $char :
+    $grid enumerate
+    {
+        .. swap $y :
+
+        enumerate 
+        { .. swap drop $char = } filter
+        { .. drop $y pair } map
+    } map flatten
+} $occurrences ::
+
+// roots --> [ [ X , Y , DX , DY ] , ... ]
+// Find "roots" where we have the beginning of a potentially valid "XMAS" within the wordsearch.
+//   X, Y: Start point
+//   DX, DY: Direction to keep moving to check the rest of the word
+// There may be more than one root for a given start point:
+// 
+//      M
+//      XM
+//
+// The entire string may not necessary be in bounds.
+{
+    'X' occurrences
+    {
+        dup
+        $beginPoint :
+        .. adjacents
+
+        {
+            // Look up 
+            dup .. getPoint
+            $char : $nextPoint :
+
+            $char 'M' =
+            { [] }
+            {
+                // Calculate direction
+                $beginPoint
+                $beginPoint $nextPoint zip { .. - } map
+                ++
+                singleton
+            }
+            ? #
+        } map flatten
+    } map flatten
+} $roots ::
+
+// X Y DX DY fullWord? --> B
+// Check if a root is a complete match for the word "XMAS".
+{
+    $dy : $dx : $y : $x :
+
+    // If we got it as a root, we already know that the "XM" are correct.
+    // Just check the "AS".
+    // First, check that the "S" would be in bounds - if so, the "A" must be.
+    
+    $x $dx 3 * +
+    $y $dy 3 * +
+    inBounds?
+    { false }
+    {
+        // Check that characters match what we'd expect
+        $x $dx 2 * +
+        $y $dy 2 * +
+        getPoint 'A' =
+
+        $x $dx 3 * +
+        $y $dy 3 * +
+        getPoint 'S' =
+
+        &
+    }
+    ? #
+} $fullWord? ::
+
+roots
+{ .... fullWord? } count
+println
