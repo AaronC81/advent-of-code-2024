@@ -5,20 +5,15 @@ use std::{env::args, error::Error, fs::read_to_string, io::{stdin, stdout, Write
 use eval::{Interpreter, Value};
 use loc::LocSource;
 use parser::{parse, Node};
-use preprocess::preprocess;
 use token::tokenize;
 
-mod preprocess;
 mod token;
 mod parser;
 mod eval;
 mod loc;
 
 pub fn code_to_node(code: &str, name: &str) -> Result<Node, Box<dyn Error>> {
-    // TODO: preprocessing will mean positions don't match the actual file! need to get locs out of that (or make tokenizer resilient.) damn!
-    let preprocessed = preprocess(&code);
-
-    let source = LocSource::new(name.to_owned(), Rc::new(preprocessed));
+    let source = LocSource::new(name.to_owned(), Rc::new(code.to_owned()));
     let tokens = tokenize(&source)?;
     let root = parse(tokens)?;
 

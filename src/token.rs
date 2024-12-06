@@ -30,7 +30,7 @@ impl Token {
 }
 
 pub fn tokenize(source: &LocSource) -> Result<Vec<Token>, Box<dyn Error>> {    
-    split_whitespace_with_loc(source)
+    split_tokens(source)
         .map(|(token, loc)| (tokenize_one(&token), loc))
         .map(|(kind, loc)|
             kind.map(|kind| Token::new(kind, loc)))
@@ -62,8 +62,9 @@ fn tokenize_one(token: &str) -> Result<TokenKind, Box<dyn Error>> {
     }
 }
 
-/// Like `split_whitespace` but includes a [Loc] with each item.
-fn split_whitespace_with_loc(source: &LocSource) -> impl Iterator<Item = (String, Loc)> {
+/// Splits input source into token strings with associated [Loc]s, dropping any comments encountered
+/// while doing so.
+fn split_tokens(source: &LocSource) -> impl Iterator<Item = (String, Loc)> {
     let chars = source.contents
         .chars()
         .chain([' '].into_iter()) // Force a final buffer flush by adding some whitespace on the end
@@ -72,7 +73,14 @@ fn split_whitespace_with_loc(source: &LocSource) -> impl Iterator<Item = (String
     let mut buffer: Option<(String, usize)> = None;
     let mut items = vec![];
     for (i, char) in chars {
-        if char.is_whitespace() {
+        if buffer.clone().map(|(s, _)| s).as_deref() == Some("//") {
+            // Magical special case! If the buffer contains `//`, drop all tokens until we encounter
+            // a newline to terminate the comment
+            if char == '\n' {
+                // Reset buffer
+                buffer = None;
+            }
+        } else if char.is_whitespace() {
             // If there is a buffer, 'finalize' it into the list of items
             // (Otherwise, we can harmlessly skip the consecutive whitespace)
             if let Some((contents, start)) = buffer {
