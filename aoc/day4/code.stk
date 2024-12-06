@@ -133,6 +133,43 @@ $grid 0 @ length $columns :
     ? #
 } $fullWord? ::
 
+// X Y cross --> [ up-left , up-right , down-right , down-left ]
+// Given a point X Y, returns the contents of the surrounding points in a cross-shape.
+{
+    $y : $x :
+
+    [   [ $x 1 - , $y 1 - ] ,
+        [ $x 1 + , $y 1 - ] ,
+        [ $x 1 + , $y 1 + ] ,
+        [ $x 1 - , $y 1 + ] ]
+    { .. inBounds? } filter
+    { .. getPoint } map
+} $cross ::
+
+// [ up-left , up-right , down-right , down-left ] isXmasCross? --> B
+// Whether the cross sequence (from `cross`) matches any valid permutation of the "XMAS" cross.
+{
+    // Valid permutations, I think:
+    // S S  M M  S M  M S
+    //  A    A    A    A
+    // M M  S S  S M  M S
+    $cs :
+
+    $cs [ 'S' , 'S' , 'M' , 'M' ] =
+    $cs [ 'M' , 'S' , 'S' , 'M' ] = |
+    $cs [ 'M' , 'M' , 'S' , 'S' ] = |
+    $cs [ 'S' , 'M' , 'M' , 'S' ] = |
+    // $cs [ 'M' , 'S' , 'M' , 'S' ] = |
+    // $cs [ 'S' , 'M' , 'S' , 'M' ] = |
+} $isXmasCross? ::
+
+// Part 1
 roots
 { .... fullWord? } count
+println
+
+// Part 2
+'A' occurrences
+{ .. cross } map
+{ isXmasCross? } count
 println
