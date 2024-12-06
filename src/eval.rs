@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, fmt::Display};
 
-use crate::{parser::Node, token::Atom};
+use crate::{parser::{Node, NodeKind}, token::Atom};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
@@ -145,21 +145,21 @@ impl Interpreter {
     }
 
     pub fn execute(&mut self, node: &Node) -> Result<(), Box<dyn Error>> {
-        match node {
-            Node::Atom(atom) => match atom {
+        match &node.kind {
+            NodeKind::Atom(atom) => match atom {
                 Atom::LiteralInteger(i) => self.push(Value::Integer(*i)),
                 Atom::LiteralChar(c) => self.push(Value::Char(*c)),
                 Atom::Action(a) => self.execute_action(a)?,
                 Atom::Binding(b) => self.push_binding(b),
             }
 
-            Node::Sequence(ns) => {
+            NodeKind::Sequence(ns) => {
                 for n in ns {
-                    self.execute(n)?;
+                    self.execute(&n)?;
                 }
             }
 
-            Node::Block(node) => {
+            NodeKind::Block(node) => {
                 self.stack.push(Value::Block(*node.clone()));
             },
         }

@@ -11,6 +11,7 @@ mod preprocess;
 mod token;
 mod parser;
 mod eval;
+mod loc;
 
 pub fn code_to_node(code: &str) -> Result<Node, Box<dyn Error>> {
     let preprocessed = preprocess(&code);
