@@ -1,6 +1,6 @@
-use std::error::Error;
+use std::{error::Error, rc::Rc};
 
-use crate::loc::Loc;
+use crate::loc::{Loc, LocSource};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Atom {
@@ -30,11 +30,13 @@ impl Token {
 }
 
 pub fn tokenize(input: &str) -> Result<Vec<Token>, Box<dyn Error>> {
-    input
-        .split_ascii_whitespace() // TODO: need a variant of this which bundles `Loc`s
-        .map(tokenize_one)
-        .map(|kind|
-            kind.map(|kind| Token::new(kind, Loc::stub())))
+    // TODO: real filename
+    let src = LocSource::new("(file)".to_owned(), Rc::new(input.to_owned()));
+    
+    split_whitespace_with_loc(src)
+        .map(|(token, loc)| (tokenize_one(&token), loc))
+        .map(|(kind, loc)|
+            kind.map(|kind| Token::new(kind, loc)))
         .collect()
 }
 
@@ -61,6 +63,38 @@ fn tokenize_one(token: &str) -> Result<TokenKind, Box<dyn Error>> {
     } else {
         Err(format!("unknown token `{token}`").into())
     }
+}
+
+/// Like `split_whitespace` but includes a [Loc] with each item.
+fn split_whitespace_with_loc(source: LocSource) -> impl Iterator<Item = (String, Loc)> {
+    let chars = source.contents
+        .chars()
+        .chain([' '].into_iter()) // Force a final buffer flush by adding some whitespace on the end
+        .enumerate();
+
+    let mut buffer: Option<(String, usize)> = None;
+    let mut items = vec![];
+    for (i, char) in chars {
+        if char.is_whitespace() {
+            // If there is a buffer, 'finalize' it into the list of items
+            // (Otherwise, we can harmlessly skip the consecutive whitespace)
+            if let Some((contents, start)) = buffer {
+                let loc = Loc::new(source.clone(), start, contents.len());
+                items.push((contents, loc));
+            }
+            buffer = None;
+        } else {
+            buffer = match buffer {
+                // If there's no buffer, start filling one up
+                None => Some((char.to_string(), i)),
+
+                // If there's already one, add to it
+                Some((contents, start)) => Some((contents + &char.to_string(), start))
+            }
+        }
+    }
+
+    items.into_iter()
 }
 
 fn is_valid_identifier_char(c: char) -> bool {

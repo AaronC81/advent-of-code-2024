@@ -52,8 +52,8 @@ impl Loc {
 /// A source that a [Loc] can refer to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocSource {
-    name: String,
-    contents: Rc<String>,
+    pub name: String,
+    pub contents: Rc<String>,
 }
 
 impl LocSource {
