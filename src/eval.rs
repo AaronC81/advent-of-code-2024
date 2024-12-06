@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, fmt::Display};
 
-use crate::{parser::{Node, NodeKind}, token::Atom};
+use crate::{loc::Loc, parser::{Node, NodeKind}, token::Atom};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
@@ -14,20 +14,20 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn into_char(self) -> Result<char, Box<dyn Error>> {
+    pub fn into_char(self) -> Result<char, ExecutionError> {
         match self {
             Value::Char(c) => Ok(c),
-            _ => Err(format!("expected character, got `{self:?}`").into())
+            _ => Err(ExecutionError::new(format!("expected character, got `{self:?}`")))
         }
     }
 
-    pub fn into_string(self) -> Result<String, Box<dyn Error>> {
+    pub fn into_string(self) -> Result<String, ExecutionError> {
         self.into_array()?
             .into_iter()
             .map(|item|
                 match item {
                     Value::Char(c) => Ok(c),
-                    _ => Err("all items in array must be characters".into()),
+                    _ => Err(ExecutionError::new("all items in array must be characters")),
                 }
             )
             .collect()
@@ -37,43 +37,43 @@ impl Value {
         Value::Array(s.chars().map(Value::Char).collect())
     }
 
-    pub fn into_integer(self) -> Result<isize, Box<dyn Error>> {
+    pub fn into_integer(self) -> Result<isize, ExecutionError> {
         match self {
             Value::Integer(i) => Ok(i),
-            _ => Err(format!("expected integer, got `{self:?}`").into())
+            _ => Err(ExecutionError::new(format!("expected integer, got `{self:?}`")))
         }
     }
 
-    pub fn into_array(self) -> Result<Vec<Value>, Box<dyn Error>> {
+    pub fn into_array(self) -> Result<Vec<Value>, ExecutionError> {
         match self {
             Value::Array(v) => Ok(v),
-            _ => Err(format!("expected array, got `{self:?}`").into())
+            _ => Err(ExecutionError::new(format!("expected array, got `{self:?}`")))
         }
     }
 
-    pub fn into_boolean(self) -> Result<bool, Box<dyn Error>> {
+    pub fn into_boolean(self) -> Result<bool, ExecutionError> {
         match self {
             Value::Boolean(b) => Ok(b),
-            _ => Err(format!("expected bool, got `{self:?}`").into())
+            _ => Err(ExecutionError::new(format!("expected bool, got `{self:?}`")))
         }
     }
 
-    pub fn into_integer_array(self) -> Result<Vec<isize>, Box<dyn Error>> {
+    pub fn into_integer_array(self) -> Result<Vec<isize>, ExecutionError> {
         self.into_array()?
             .into_iter()
             .map(|item|
                 match item {
                     Value::Integer(i) => Ok(i),
-                    _ => Err("all items in array must be numeric".into()),
+                    _ => Err(ExecutionError::new("all items in array must be numeric")),
                 }
             )
-            .collect::<Result<Vec<_>, Box<dyn Error>>>()
+            .collect::<Result<Vec<_>, ExecutionError>>()
     }
 
-    pub fn into_block(self) -> Result<Node, Box<dyn Error>> {
+    pub fn into_block(self) -> Result<Node, ExecutionError> {
         match self {
             Value::Block(n) => Ok(n),
-            _ => Err(format!("expected block, got `{self:?}`").into())
+            _ => Err(ExecutionError::new(format!("expected block, got `{self:?}`")))
         }
     }
 }
@@ -144,12 +144,12 @@ impl Interpreter {
         self.binding_frames.first_mut().unwrap().bindings.insert(name.to_owned(), value);
     }
 
-    pub fn execute(&mut self, node: &Node) -> Result<(), Box<dyn Error>> {
+    pub fn execute(&mut self, node: &Node) -> Result<(), ExecutionError> {
         match &node.kind {
             NodeKind::Atom(atom) => match atom {
                 Atom::LiteralInteger(i) => self.push(Value::Integer(*i)),
                 Atom::LiteralChar(c) => self.push(Value::Char(*c)),
-                Atom::Action(a) => self.execute_action(a)?,
+                Atom::Action(a) => self.execute_action(a).map_err(|e| e.add_loc(&node.loc))?,
                 Atom::Binding(b) => self.push_binding(b),
             }
 
@@ -167,7 +167,7 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute_block(&mut self, node: &Node) -> Result<(), Box<dyn Error>> {
+    fn execute_block(&mut self, node: &Node) -> Result<(), ExecutionError> {
         self.binding_frames.push(BindingFrame::new());
         self.execute(node)?;
         self.binding_frames.pop();
@@ -175,13 +175,13 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute_action(&mut self, name: &str) -> Result<(), Box<dyn Error>> {
+    fn execute_action(&mut self, name: &str) -> Result<(), ExecutionError> {
         match name {
             // Core machinery
             ":" => {
                 let target = self.pop()?;
                 let Value::Unbound(name) = target else {
-                    return Err(format!("bind target `{target}` is not a binding; has it already been assigned?").into())
+                    return Err(ExecutionError::new(format!("bind target `{target}` is not a binding; has it already been assigned?")))
                 };
 
                 let value = self.pop()?;
@@ -190,7 +190,7 @@ impl Interpreter {
             "::" => {
                 let target = self.pop()?;
                 let Value::Unbound(name) = target else {
-                    return Err(format!("bind target `{target}` is not a binding; has it already been assigned?").into())
+                    return Err(ExecutionError::new(format!("bind target `{target}` is not a binding; has it already been assigned?")))
                 };
 
                 // Drop $ off binding name
@@ -199,7 +199,7 @@ impl Interpreter {
                 let block = self.pop()?.into_block()?;
 
                 if self.user_actions.contains_key(name) {
-                    return Err(format!("already defined an action named `{name}`").into())
+                    return Err(ExecutionError::new(format!("already defined an action named `{name}`")))
                 }
 
                 self.user_actions.insert(name.to_owned(), block);
@@ -309,7 +309,7 @@ impl Interpreter {
                 let expected_count = name.len();
 
                 if expected_count != a.len() {
-                    return Err(format!("unpack action `{name}` expected {expected_count} items but got {}", a.len()).into())
+                    return Err(ExecutionError::new(format!("unpack action `{name}` expected {expected_count} items but got {}", a.len())))
                 }
 
                 for item in a {
@@ -326,7 +326,7 @@ impl Interpreter {
                 let mut arr = self.pop()?.into_array()?;
 
                 if index < 0 || index >= arr.len() as isize {
-                    return Err(format!("index out of range `{index}`").into())
+                    return Err(ExecutionError::new(format!("index out of range `{index}`")))
                 }
 
                 self.push(arr.remove(index as usize));
@@ -462,7 +462,7 @@ impl Interpreter {
                 let s = self.pop()?.into_string()?;
                 match s.parse() {
                     Ok(i) => self.push(Value::Integer(i)),
-                    Err(_) => return Err(format!("not convertible to integer: `{s}`").into()),
+                    Err(_) => return Err(ExecutionError::new(format!("not convertible to integer: `{s}`"))),
                 }
             },
             
@@ -484,7 +484,7 @@ impl Interpreter {
             }
             
             // Oh no!
-            _ => return Err(format!("unknown action `{name}`").into()),
+            _ => return Err(ExecutionError::new(format!("unknown action `{name}`"))),
         }
 
         Ok(())
@@ -515,10 +515,48 @@ impl Interpreter {
         self.stack.push(value)
     }
 
-    fn pop(&mut self) -> Result<Value, Box<dyn Error>> {
+    fn pop(&mut self) -> Result<Value, ExecutionError> {
         match self.stack.pop() {
             Some(v) => Ok(v),
-            None => Err("attempted to pop from empty stack".into())
+            None => Err(ExecutionError::new("attempted to pop from empty stack")),
         }
     }
 }
+
+/// Error encountered during action evaluation.
+/// These start without any associated [Loc], but it is added while being passed up the chain.
+/// This saves you from passing the node down unnecessarily.
+#[derive(Debug, Clone)]
+pub struct ExecutionError {
+    message: String,
+    loc: Option<Loc>,
+}
+
+impl ExecutionError {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self { message: message.into(), loc: None }
+    }
+
+    pub fn add_loc(self, loc: &Loc) -> Self {
+        if self.loc.is_some() {
+            self // Don't replace an existing loc
+        } else {
+            ExecutionError { loc: Some(loc.clone()), ..self }
+        }
+    }
+}
+impl Display for ExecutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "error at ")?;
+
+        match &self.loc {
+            Some(loc) => write!(f, "`{}` (position {:?} in {})", loc.contents(), loc.pos, loc.source.name)?,
+            None => write!(f, "unknown position")?,
+        }
+
+        write!(f, ": {}", self.message)?;
+
+        Ok(())
+    }
+}
+impl Error for ExecutionError {}

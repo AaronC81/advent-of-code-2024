@@ -3,9 +3,9 @@ use std::{cmp::{max, min}, ops::Range, rc::Rc};
 /// A source code location for a parsed token or node.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Loc {
-    source: LocSource,
-    pos: usize,
-    len: usize,
+    pub source: LocSource,
+    pub pos: usize,
+    pub len: usize,
 }
 
 impl Loc {

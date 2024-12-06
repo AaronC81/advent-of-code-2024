@@ -72,7 +72,7 @@ fn repl() -> Result<(), Box<dyn Error>> {
                 println!("");
             },
             Err(e) => {
-                println!("Execution error: {e:?}");
+                println!("Execution error: {e}");
                 continue;
             }
         }
