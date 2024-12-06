@@ -1,8 +1,9 @@
 #![feature(let_chains)]
 
-use std::{env::args, error::Error, fs::read_to_string, io::{stdin, stdout, Write}, path::Path, process::abort};
+use std::{env::args, error::Error, fs::read_to_string, io::{stdin, stdout, Write}, path::Path, process::abort, rc::Rc};
 
 use eval::{Interpreter, Value};
+use loc::LocSource;
 use parser::{parse, Node};
 use preprocess::preprocess;
 use token::tokenize;
@@ -13,9 +14,12 @@ mod parser;
 mod eval;
 mod loc;
 
-pub fn code_to_node(code: &str) -> Result<Node, Box<dyn Error>> {
+pub fn code_to_node(code: &str, name: &str) -> Result<Node, Box<dyn Error>> {
+    // TODO: preprocessing will mean positions don't match the actual file! need to get locs out of that (or make tokenizer resilient.) damn!
     let preprocessed = preprocess(&code);
-    let tokens = tokenize(&preprocessed)?;
+
+    let source = LocSource::new(name.to_owned(), Rc::new(preprocessed));
+    let tokens = tokenize(&source)?;
     let root = parse(tokens)?;
 
     Ok(root)
@@ -31,8 +35,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input_path = args().nth(2);
 
     // Load input code
-    let code = read_to_string(code_path)?;
-    let root = code_to_node(&code)?;
+    let code = read_to_string(&code_path)?;
+    let root = code_to_node(&code, &code_path)?;
 
     let input = input_path.map(|p| read_to_string(p)).transpose()?;
 
@@ -58,7 +62,7 @@ fn repl() -> Result<(), Box<dyn Error>> {
         stdin().read_line(&mut line)?;
 
         let node;
-        match code_to_node(&line) {
+        match code_to_node(&line, "(repl)") {
             Ok(n) => node = n,
             Err(e) => {
                 println!("Parse error: {e}");
@@ -80,5 +84,5 @@ fn repl() -> Result<(), Box<dyn Error>> {
 }
 
 fn load_stdlib() -> Result<Node, Box<dyn Error>> {
-    code_to_node(include_str!("../lib/stdlib.stk"))
+    code_to_node(include_str!("../lib/stdlib.stk"), "(stdlib)")
 }

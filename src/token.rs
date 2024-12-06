@@ -29,11 +29,8 @@ impl Token {
     }
 }
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>, Box<dyn Error>> {
-    // TODO: real filename
-    let src = LocSource::new("(file)".to_owned(), Rc::new(input.to_owned()));
-    
-    split_whitespace_with_loc(src)
+pub fn tokenize(source: &LocSource) -> Result<Vec<Token>, Box<dyn Error>> {    
+    split_whitespace_with_loc(source)
         .map(|(token, loc)| (tokenize_one(&token), loc))
         .map(|(kind, loc)|
             kind.map(|kind| Token::new(kind, loc)))
@@ -66,7 +63,7 @@ fn tokenize_one(token: &str) -> Result<TokenKind, Box<dyn Error>> {
 }
 
 /// Like `split_whitespace` but includes a [Loc] with each item.
-fn split_whitespace_with_loc(source: LocSource) -> impl Iterator<Item = (String, Loc)> {
+fn split_whitespace_with_loc(source: &LocSource) -> impl Iterator<Item = (String, Loc)> {
     let chars = source.contents
         .chars()
         .chain([' '].into_iter()) // Force a final buffer flush by adding some whitespace on the end
